@@ -1,0 +1,6 @@
+# Local development: HMAC-signed JWTs issued by POST /dev/token.
+app:
+  security:
+    jwt:
+      # Must be at least 32 bytes (HS256). Local use only.
+      secret: ${JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
