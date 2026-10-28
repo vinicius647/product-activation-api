@@ -11,8 +11,8 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      # Schema is owned by Flyway. Switch to "validate" once the first migration exists.
-      ddl-auto: none
+      # The schema is owned by Flyway; Hibernate only checks that the entities match it.
+      ddl-auto: validate
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -20,6 +20,11 @@ spring:
 server:
   port: 8080
   shutdown: graceful
+
+logging:
+  pattern:
+    # Adds the correlation id to every log line.
+    level: "%5p [%X{correlationId:-}]"
 
 springdoc:
   api-docs:
@@ -72,9 +77,6 @@ resilience4j:
         wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 5
         automatic-transition-from-open-to-half-open-enabled: true
-    instances:
-      persistence:
-        base-config: default
   ratelimiter:
     configs:
       default:
@@ -83,5 +85,5 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 0
     instances:
-      activationApi:
+      requestsApi:
         base-config: default

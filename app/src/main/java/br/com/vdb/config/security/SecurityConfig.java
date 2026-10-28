@@ -16,8 +16,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    static final String SCOPE_READ = "SCOPE_activations:read";
-    static final String SCOPE_WRITE = "SCOPE_activations:write";
+    static final String SCOPE_READ = "SCOPE_requests:read";
+    static final String SCOPE_WRITE = "SCOPE_requests:write";
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

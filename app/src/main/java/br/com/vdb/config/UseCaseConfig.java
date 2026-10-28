@@ -1,7 +1,7 @@
 package br.com.vdb.config;
 
 import br.com.vdb.core.port.out.ActivationRepositoryPort;
-import br.com.vdb.core.service.ProductActivationService;
+import br.com.vdb.core.service.ActivationRequestService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,7 +19,7 @@ public class UseCaseConfig {
     }
 
     @Bean
-    ProductActivationService productActivationService(ActivationRepositoryPort repository, Clock clock) {
-        return new ProductActivationService(repository, clock);
+    ActivationRequestService activationRequestService(ActivationRepositoryPort repository, Clock clock) {
+        return new ActivationRequestService(repository, clock);
     }
 }

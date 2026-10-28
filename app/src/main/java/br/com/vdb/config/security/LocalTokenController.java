@@ -39,7 +39,7 @@ public class LocalTokenController {
     @Operation(summary = "Issue a local JWT")
     public Map<String, Object> issueToken(
             @RequestParam(defaultValue = "local-user") String subject,
-            @RequestParam(defaultValue = "activations:read activations:write") String scope) {
+            @RequestParam(defaultValue = "requests:read requests:write") String scope) {
         Instant now = clock.instant();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("product-activation-api-local")

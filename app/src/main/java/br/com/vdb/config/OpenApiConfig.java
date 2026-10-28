@@ -16,7 +16,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title(applicationName)
-                        .description("API to activate products for customers")
+                        .description("Registers product activation requests and sends them to the activation provider")
                         .version("v1"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
