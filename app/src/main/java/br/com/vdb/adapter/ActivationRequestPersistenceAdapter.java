@@ -1,17 +1,24 @@
 package br.com.vdb.adapter;
 
+import br.com.vdb.core.domain.exception.ConcurrentUpdateException;
 import br.com.vdb.core.domain.model.ActivationRequest;
+import br.com.vdb.core.domain.model.ActivationStatus;
 import br.com.vdb.core.port.in.ActivationSearch;
 import br.com.vdb.core.port.in.PageResult;
 import br.com.vdb.core.port.out.ActivationRepositoryPort;
 import br.com.vdb.entity.ActivationRequestEntity;
 import br.com.vdb.repository.ActivationRequestJpaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,5 +61,31 @@ public class ActivationRequestPersistenceAdapter implements ActivationRepository
                 repository.search(search.clientId(), search.status(), search.customerId(), pageable);
         return new PageResult<>(page.map(ActivationRequestEntity::toDomain).getContent(),
                 search.page(), search.size(), page.getTotalElements());
+    }
+
+    @Override
+    @Transactional
+    public List<ActivationRequest> claimPending(int limit, Instant now) {
+        List<ActivationRequestEntity> rows = repository.lockDueRequests(now, limit);
+        rows.forEach(row -> row.applyState(row.toDomain().startProcessing(now)));
+        repository.flush(); // writes the new status and increments the versions before mapping
+        return rows.stream().map(ActivationRequestEntity::toDomain).toList();
+    }
+
+    @Override
+    public List<ActivationRequest> findStuck(Instant processingBefore, int limit) {
+        return repository.findByStatusAndUpdatedAtBefore(ActivationStatus.PROCESSING, processingBefore, Limit.of(limit))
+                .stream()
+                .map(ActivationRequestEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public ActivationRequest update(ActivationRequest request) {
+        try {
+            return repository.saveAndFlush(ActivationRequestEntity.fromDomain(request)).toDomain();
+        } catch (OptimisticLockingFailureException e) {
+            throw new ConcurrentUpdateException(request.id());
+        }
     }
 }

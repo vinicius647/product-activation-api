@@ -21,6 +21,27 @@ server:
   port: 8080
   shutdown: graceful
 
+app:
+  activation:
+    scheduler:
+      enabled: ${ACTIVATION_SCHEDULER_ENABLED:true}
+    dispatch:
+      batch-size: ${ACTIVATION_BATCH_SIZE:50}
+      fixed-delay: ${ACTIVATION_DISPATCH_DELAY:2s}
+    reconciliation:
+      fixed-delay: ${ACTIVATION_RECONCILIATION_DELAY:1m}
+      stuck-after: ${ACTIVATION_STUCK_AFTER:5m}
+    retry:
+      max-attempts: ${ACTIVATION_MAX_ATTEMPTS:5}
+      initial-backoff: ${ACTIVATION_INITIAL_BACKOFF:2s}
+      max-backoff: ${ACTIVATION_MAX_BACKOFF:5m}
+      jitter: ${ACTIVATION_RETRY_JITTER:0.2}
+  provider:
+    # Local default: the fake provider inside this application (local profile).
+    base-url: ${PROVIDER_BASE_URL:http://localhost:${server.port}}
+    connect-timeout: ${PROVIDER_CONNECT_TIMEOUT:1s}
+    read-timeout: ${PROVIDER_READ_TIMEOUT:3s}
+
 logging:
   pattern:
     # Adds the correlation id to every log line.
@@ -62,6 +83,7 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+        http.client.requests: true
 
 resilience4j:
   circuitbreaker:
@@ -77,6 +99,13 @@ resilience4j:
         wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 5
         automatic-transition-from-open-to-half-open-enabled: true
+    instances:
+      provider:
+        base-config: default
+        # Only server errors and timeouts mean the provider is unhealthy; 4xx answers do not open the circuit.
+        record-exceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
   ratelimiter:
     configs:
       default:

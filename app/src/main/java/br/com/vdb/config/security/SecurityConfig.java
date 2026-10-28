@@ -27,7 +27,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/dev/token").permitAll()
+                        // Both endpoints only exist in the "local" profile.
+                        .requestMatchers(HttpMethod.POST, "/dev/token", "/provider/v1/activate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAuthority(SCOPE_READ)
                         .requestMatchers("/api/**").hasAuthority(SCOPE_WRITE)
                         .anyRequest().authenticated())
