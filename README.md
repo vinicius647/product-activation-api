@@ -71,7 +71,13 @@ The application starts on `http://localhost:8080` with the `local` profile, whic
 docker compose up --build
 ```
 
-Same `local` profile features, but data is stored in PostgreSQL.
+Same `local` profile features, but data is stored in PostgreSQL, in the named volume `pgdata`.
+
+| Command | Database data |
+|---|---|
+| `docker compose up --build` | kept (only the application image is rebuilt) |
+| `docker compose down` | kept (containers are removed, the volume is not) |
+| `docker compose down -v` | **removed**: the next `up` starts with an empty database and Flyway creates the schema again |
 
 ### Try the full flow
 
