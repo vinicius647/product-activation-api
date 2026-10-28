@@ -92,15 +92,43 @@ class ActivationRequestApiTest {
                 .andExpect(status().isCreated());
 
         mockMvc.perform(create(externalId, "CUST-1", "TV-HD").with(writer("client-a")))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("https://product-activation-api/problems/duplicate-request"));
     }
 
     @Test
-    void validatesRequiredFields() throws Exception {
+    void validatesRequiredFieldsWithProblemDetails() throws Exception {
         mockMvc.perform(post("/api/v1/requests").with(writer("client-a"))
+                        .header("X-Correlation-Id", "trace-123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"externalId\": \"\", \"productCode\": \"INTERNET 500\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(header().string("Content-Type", "application/problem+json"))
+                .andExpect(header().string("X-Correlation-Id", "trace-123"))
+                .andExpect(jsonPath("$.type").value("https://product-activation-api/problems/validation-error"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.instance").value("/api/v1/requests"))
+                .andExpect(jsonPath("$.traceId").value("trace-123"))
+                .andExpect(jsonPath("$.errors[?(@.field == 'externalId')]").exists())
+                .andExpect(jsonPath("$.errors[?(@.field == 'customerId')]").exists())
+                .andExpect(jsonPath("$.errors[?(@.field == 'productCode')]").exists());
+    }
+
+    @Test
+    void rejectsMalformedJsonWithoutInternalDetails() throws Exception {
+        mockMvc.perform(post("/api/v1/requests").with(writer("client-a"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalId\": "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("The request body is missing or is not valid JSON."))
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+    }
+
+    @Test
+    void rejectsInvalidId() throws Exception {
+        mockMvc.perform(get("/api/v1/requests/not-a-uuid").with(reader("client-a")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("id"));
     }
 
     @Test
@@ -125,7 +153,8 @@ class ActivationRequestApiTest {
     @Test
     void rejectsInvalidPageSize() throws Exception {
         mockMvc.perform(get("/api/v1/requests").param("size", "500").with(reader("client-a")))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("size"));
     }
 
     @Test
