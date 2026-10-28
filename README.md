@@ -407,6 +407,7 @@ Everything in `application.yml` can be changed with environment variables:
 | `ActivationRequestApiTest` | Integration (Spring + MockMvc + H2) | HTTP contract, validation and Problem Details, `201`/`200`/`409`/`404`, list filters and paging, client isolation, `401`/`403`, probes, metrics, OpenAPI |
 | `ConcurrentCreationTest` | Integration (H2 + Flyway schema) | 10 parallel creates with the same `externalId` → one row |
 | `ActivationDispatchIntegrationTest` | Integration (WireMock as provider) | Success, `400`, `500`, timeout, `503` + `Retry-After`; idempotency and correlation headers; event published |
+| `ArchitectureTest` | ArchUnit | Structure and layering rules of hexagonal architecture |
 
 Strategy: business rules are tested without Spring, so the tests are fast and show the rules clearly. Integration
 tests check what unit tests cannot: HTTP mapping, security, SQL (the unique constraint, `SKIP LOCKED`, optimistic
@@ -451,7 +452,7 @@ use pagination limits (already in place), archive old final requests, make sure 
 tune provider timeouts and circuit breaker, and, if needed, cache read-heavy data.
 
 **How to check the fix worked.** Compare p95/p99 latency, pool wait time and query time before and after the
-deploy on dashboards, with an alert on the target values; follow a canary or a part of the traffic first;
+deploy on dashboards, with an alert on the target values; follow a part of the traffic first;
 check the slow query is gone from `pg_stat_statements`.
 
 ## Production
@@ -497,10 +498,13 @@ smoke tests, then deploy to production (rolling or canary).
 - Endpoint or job to re-send `FAILED` requests after a manual fix.
 - Archive or delete old final requests.
 - Alerts: `PENDING` backlog growing, circuit breaker open, `FAILED` rate.
+- Implement JaCoCo coverage and SonarCloud analysis in CI.
+- Implement a deployment.yml for Kubernetes, GKE or ECS, with secrets from the cloud secret manager.
+- Migrate to Java 25 as this version is an LTS release, to use the new features and the virtual threads improvements.
 
 ## Use of AI
 
 I used Claude Code (Anthropic) as a pair programmer during this challenge: to discuss the design options
 (sync vs async dispatch, queue vs database polling, duplicate strategy), to generate the first version of the code,
-tests and this README, and to check behaviours (for example, how H2 handles `SKIP LOCKED`). I reviewed the decisions,
-the code and the tests, and the final choices are mine.
+tests and this README, and to check behaviors (for example, how H2 handles `SKIP LOCKED`, `@Version`, Virtual Threads for each provider request).
+I reviewed the decisions, the code and the tests, and the final choices are mine.

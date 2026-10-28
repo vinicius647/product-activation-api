@@ -84,6 +84,7 @@ public class ActivationProviderHttpAdapter implements ActivationProviderPort {
         int status = e.getStatusCode().value();
         String reason = "Provider answered HTTP " + status;
         return switch (status) {
+            // These 3 http codes are considered temporary failures, so the request will be retried later.
             case 408, 429, 503 -> temporary(request, reason, retryAfter(e.getResponseHeaders()));
             default -> {
                 if (status >= 500) {
