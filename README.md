@@ -61,7 +61,8 @@ On Windows use `mvnw.cmd verify`.
 The application starts on `http://localhost:8080` with the `local` profile, which enables:
 
 - an in-memory H2 database (schema created by Flyway);
-- `POST /dev/token`, which issues test JWTs (there is no real authorization server locally);
+- `POST /dev/token?clientId=...`, which issues test JWTs with a `client_id` claim (default `local-client`;
+  there is no real authorization server locally);
 - a **fake provider** at `POST /provider/v1/activate`, called by the application itself.
 
 ### Run with Docker Compose (application + PostgreSQL)
@@ -75,7 +76,7 @@ Same `local` profile features, but data is stored in PostgreSQL.
 ### Try the full flow
 
 ```bash
-# 1. Get a token (scopes requests:read and requests:write)
+# 1. Get a token for client "local-client" (scopes requests:read and requests:write)
 TOKEN=$(curl -s -X POST http://localhost:8080/dev/token | sed -E 's/.*"access_token":"([^"]+)".*/\1/')
 
 # 2. Create a request
@@ -347,7 +348,8 @@ Implemented as an **OAuth2 Resource Server** with JWT:
   `GET` returns `404` for requests of another client, and the list always filters by the caller.
 - **Rate limit:** 50 calls per second per instance (Resilience4j), `429` when exceeded.
 - **Locally** there is no authorization server: the `local` profile validates HS256 tokens signed with a local
-  secret and issued by `POST /dev/token`. This endpoint does not exist in `prod`.
+  secret and issued by `POST /dev/token`, which sets `client_id` like a client credentials token. Calling it with
+  another `clientId` is an easy way to see the isolation between clients. This endpoint does not exist in `prod`.
 - **Provider credential:** the provider here needs none. In production its client secret / API key would be stored in
   the cloud secret manager (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager), injected as an environment
   variable or read at start-up, never in the repository or in logs. Rotation: the secret manager creates the new

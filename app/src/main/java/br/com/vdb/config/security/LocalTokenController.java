@@ -36,16 +36,18 @@ public class LocalTokenController {
     }
 
     @PostMapping("/dev/token")
-    @Operation(summary = "Issue a local JWT")
+    @Operation(summary = "Issue a local JWT",
+            description = "Simulates a client credentials token: the calling system goes in client_id (and sub)")
     public Map<String, Object> issueToken(
-            @RequestParam(defaultValue = "local-user") String subject,
+            @RequestParam(defaultValue = "local-client") String clientId,
             @RequestParam(defaultValue = "requests:read requests:write") String scope) {
         Instant now = clock.instant();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("product-activation-api-local")
-                .subject(subject)
+                .subject(clientId)
                 .issuedAt(now)
                 .expiresAt(now.plus(TTL))
+                .claim("client_id", clientId)
                 .claim("scope", scope)
                 .build();
         String token = jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))

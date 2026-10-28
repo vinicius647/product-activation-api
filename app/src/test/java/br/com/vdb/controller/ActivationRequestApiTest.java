@@ -170,14 +170,24 @@ class ActivationRequestApiTest {
     }
 
     @Test
-    void acceptsTokenIssuedByLocalEndpoint() throws Exception {
-        String response = mockMvc.perform(post("/dev/token"))
+    void localTokenCarriesClientId() throws Exception {
+        String clientA = "Bearer " + localToken("client-a");
+        String clientB = "Bearer " + localToken("client-b");
+
+        String location = mockMvc.perform(create(newExternalId(), "CUST-1", "INTERNET-500")
+                        .header("Authorization", clientA))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getHeader("Location");
+
+        mockMvc.perform(get(location).header("Authorization", clientA)).andExpect(status().isOk());
+        mockMvc.perform(get(location).header("Authorization", clientB)).andExpect(status().isNotFound());
+    }
+
+    private String localToken(String clientId) throws Exception {
+        String response = mockMvc.perform(post("/dev/token").param("clientId", clientId))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        String token = response.replaceAll(".*\"access_token\"\\s*:\\s*\"([^\"]+)\".*", "$1");
-
-        mockMvc.perform(get("/api/v1/requests").header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+        return response.replaceAll(".*\"access_token\"\\s*:\\s*\"([^\"]+)\".*", "$1");
     }
 
     @Test
@@ -195,11 +205,11 @@ class ActivationRequestApiTest {
     }
 
     static RequestPostProcessor writer(String clientId) {
-        return jwt().jwt(token -> token.subject(clientId)).authorities(() -> "SCOPE_requests:write");
+        return jwt().jwt(token -> token.claim("client_id", clientId)).authorities(() -> "SCOPE_requests:write");
     }
 
     static RequestPostProcessor reader(String clientId) {
-        return jwt().jwt(token -> token.subject(clientId)).authorities(() -> "SCOPE_requests:read");
+        return jwt().jwt(token -> token.claim("client_id", clientId)).authorities(() -> "SCOPE_requests:read");
     }
 
     private static String newExternalId() {

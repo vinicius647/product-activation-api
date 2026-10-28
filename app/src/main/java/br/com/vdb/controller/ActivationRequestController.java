@@ -92,7 +92,7 @@ public class ActivationRequestController {
 
     /**
      * In the client credentials flow the calling system is identified by "client_id" (or "azp");
-     * "sub" is the fallback used by tokens issued locally.
+     * "sub" is the fallback for authorization servers that send neither of them.
      */
     private static String clientId(Jwt jwt) {
         String clientId = jwt.getClaimAsString("client_id");
